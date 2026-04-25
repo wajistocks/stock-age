@@ -1,4 +1,5 @@
-"use client";
+const fs = require('fs');
+const code = `"use client";
 import { useState } from "react";
 
 export default function Home() {
@@ -33,4 +34,6 @@ export default function Home() {
       </div>
     </div>
   );
-}
+}`;
+fs.writeFileSync('app/page.tsx', code);
+console.log('Done!');
