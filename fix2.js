@@ -1,4 +1,5 @@
-import { NextRequest, NextResponse } from 'next/server';
+const fs = require('fs');
+const code = `import { NextRequest, NextResponse } from 'next/server';
 
 export async function POST(req) {
   const { messages } = await req.json();
@@ -6,7 +7,7 @@ export async function POST(req) {
   
   let marketData = '';
   try {
-    const symbol = userMessage.match(/[A-Z]{2,5}/)?.[0];
+    const symbol = userMessage.match(/\b[A-Z]{2,5}\b/)?.[0];
     if (symbol) {
       const avRes = await fetch('https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=' + symbol + '&apikey=' + process.env.ALPHA_VANTAGE_KEY);
       const avData = await avRes.json();
@@ -35,4 +36,6 @@ export async function POST(req) {
   const data = await response.json();
   const text = data.content?.[0]?.text || '';
   return NextResponse.json({ content: text });
-}
+}`;
+fs.writeFileSync('app/api/research/route.ts', code);
+console.log('Done!');
