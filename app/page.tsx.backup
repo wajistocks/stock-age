@@ -1,0 +1,286 @@
+'use client';
+import { useState, useRef, useEffect } from “react”;
+
+const SECTORS = [
+“Technology”, “Healthcare”, “Finance”, “Energy”,
+“Consumer”, “Industrials”, “Real Estate”, “All Sectors”
+];
+const HORIZONS = [“Short-term (1–3 mo)”, “Mid-term (6–12 mo)”, “Long-term (2–5 yr)”];
+const RISK_LEVELS = [“Conservative”, “Moderate”, “Aggressive”];
+
+function StockCard({ rec, index }: { rec: any; index: number }) {
+const [expanded, setExpanded] = useState(false);
+const colors = [”#f59e0b”, “#34d399”, “#60a5fa”, “#a78bfa”, “#fb7185”];
+const accent = colors[index % colors.length];
+const sentimentColor =
+rec.sentiment === “Bullish” ? “#34d399” : rec.sentiment === “Bearish” ? “#fb7185” : “#f59e0b”;
+
+return (
+<div
+onClick={() => setExpanded(!expanded)}
+style={{
+background: “rgba(255,255,255,0.03)”,
+border: “1px solid rgba(255,255,255,0.08)”,
+borderLeft: `3px solid ${accent}`,
+borderRadius: 12, padding: “18px 20px”,
+cursor: “pointer”, marginBottom: 10,
+}}
+>
+<div style={{ display: “flex”, justifyContent: “space-between”, alignItems: “flex-start” }}>
+<div style={{ display: “flex”, gap: 12, alignItems: “center” }}>
+<div style={{
+width: 40, height: 40, borderRadius: 10,
+background: `linear-gradient(135deg, ${accent}22, ${accent}44)`,
+border: `1px solid ${accent}44`,
+display: “flex”, alignItems: “center”, justifyContent: “center”,
+fontSize: 13, fontWeight: 700, color: accent, fontFamily: “monospace”,
+}}>
+{rec.symbol?.slice(0, 3)}
+</div>
+<div>
+<div style={{ fontWeight: 700, color: “#f1f5f9”, fontSize: 15 }}>{rec.symbol} — {rec.name}</div>
+<div style={{ fontSize: 12, color: “#94a3b8”, marginTop: 2 }}>{rec.sector} · {rec.marketCap}</div>
+</div>
+</div>
+<div style={{ display: “flex”, flexDirection: “column”, alignItems: “flex-end”, gap: 4 }}>
+<span style={{
+background: `${sentimentColor}18`, color: sentimentColor,
+border: `1px solid ${sentimentColor}44`,
+borderRadius: 6, padding: “2px 10px”, fontSize: 11, fontWeight: 700,
+}}>{rec.sentiment}</span>
+<span style={{ fontSize: 11, color: “#64748b” }}>{expanded ? “▲ collapse” : “▼ details”}</span>
+</div>
+</div>
+
+```
+{expanded && (
+<div style={{ marginTop: 16, borderTop: "1px solid rgba(255,255,255,0.06)", paddingTop: 16 }}>
+<div style={{ display: "grid", gridTemplateColumns: "repeat(3,1fr)", gap: 10, marginBottom: 14 }}>
+{[
+{ label: "Target Price", value: rec.targetPrice },
+{ label: "Upside", value: rec.upside },
+{ label: "Risk", value: rec.risk },
+].map((m) => (
+<div key={m.label} style={{ background: "rgba(255,255,255,0.04)", borderRadius: 8, padding: "10px 12px" }}>
+<div style={{ fontSize: 10, color: "#64748b", textTransform: "uppercase", letterSpacing: 1 }}>{m.label}</div>
+<div style={{ fontSize: 15, fontWeight: 700, color: "#e2e8f0", marginTop: 4, fontFamily: "monospace" }}>{m.value}</div>
+</div>
+))}
+</div>
+<div style={{ fontSize: 13, color: "#94a3b8", lineHeight: 1.7 }}>{rec.rationale}</div>
+{rec.catalysts && (
+<div style={{ marginTop: 12 }}>
+<div style={{ fontSize: 11, color: "#64748b", textTransform: "uppercase", letterSpacing: 1, marginBottom: 6 }}>Key Catalysts</div>
+<div style={{ display: "flex", flexWrap: "wrap", gap: 6 }}>
+{rec.catalysts.map((c: string, i: number) => (
+<span key={i} style={{
+background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)",
+borderRadius: 6, padding: "3px 10px", fontSize: 12, color: "#cbd5e1",
+}}>{c}</span>
+))}
+</div>
+</div>
+)}
+</div>
+)}
+</div>
+```
+
+);
+}
+
+function Message({ msg }: { msg: any }) {
+if (msg.role === “user”) {
+return (
+<div style={{ display: “flex”, justifyContent: “flex-end”, marginBottom: 16 }}>
+<div style={{
+background: “linear-gradient(135deg,#1d4ed8,#4f46e5)”,
+color: “#fff”, borderRadius: “16px 16px 4px 16px”,
+padding: “12px 16px”, maxWidth: “70%”, fontSize: 14, lineHeight: 1.6,
+}}>{msg.content}</div>
+</div>
+);
+}
+if (msg.type === “recommendations” && msg.recommendations) {
+return (
+<div style={{ marginBottom: 20 }}>
+<div style={{ fontSize: 13, color: “#94a3b8”, marginBottom: 12, lineHeight: 1.7 }}>{msg.summary}</div>
+{msg.recommendations.map((rec: any, i: number) => <StockCard key={i} rec={rec} index={i} />)}
+{msg.disclaimer && (
+<div style={{
+marginTop: 12, padding: “10px 14px”,
+background: “rgba(251,191,36,0.06)”, border: “1px solid rgba(251,191,36,0.2)”,
+borderRadius: 8, fontSize: 12, color: “#78716c”,
+}}>⚠️ {msg.disclaimer}</div>
+)}
+</div>
+);
+}
+return (
+<div style={{ marginBottom: 16 }}>
+<div style={{
+background: “rgba(255,255,255,0.04)”, border: “1px solid rgba(255,255,255,0.08)”,
+borderRadius: “4px 16px 16px 16px”,
+padding: “12px 16px”, fontSize: 14, color: “#cbd5e1”, lineHeight: 1.7, whiteSpace: “pre-wrap”,
+}}>{msg.content}</div>
+</div>
+);
+}
+
+export default function StockAgent() {
+const [messages, setMessages] = useState<any[]>([]);
+const [input, setInput] = useState(””);
+const [loading, setLoading] = useState(false);
+const [sector, setSector] = useState(“Technology”);
+const [horizon, setHorizon] = useState(“Mid-term (6–12 mo)”);
+const [risk, setRisk] = useState(“Moderate”);
+const [started, setStarted] = useState(false);
+const bottomRef = useRef<HTMLDivElement>(null);
+const chatHistory = useRef<any[]>([]);
+
+useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: “smooth” }); }, [messages, loading]);
+
+async function sendMessage(userInput: string) {
+if (!userInput.trim() || loading) return;
+setStarted(true);
+setLoading(true);
+const userMsg = { role: “user”, content: userInput };
+setMessages((prev) => […prev, userMsg]);
+chatHistory.current = […chatHistory.current, { role: “user”, content: userInput }];
+setInput(””);
+
+```
+try {
+const res = await fetch("/api/research", {
+method: "POST",
+headers: { "Content-Type": "application/json" },
+body: JSON.stringify({ messages: chatHistory.current, sector, horizon, risk }),
+});
+const data = await res.json();
+const fullText = data.content || "";
+chatHistory.current = [...chatHistory.current, { role: "assistant", content: fullText }];
+
+const jsonMatch = fullText.match(/\{[\s\S]*"recommendations"[\s\S]*\}/);
+if (jsonMatch) {
+try {
+const parsed = JSON.parse(jsonMatch[0]);
+setMessages((prev) => [...prev, {
+role: "assistant", type: "recommendations",
+summary: parsed.summary, recommendations: parsed.recommendations, disclaimer: parsed.disclaimer,
+}]);
+} catch { setMessages((prev) => [...prev, { role: "assistant", content: fullText }]); }
+} else {
+setMessages((prev) => [...prev, { role: "assistant", content: fullText }]);
+}
+} catch {
+setMessages((prev) => [...prev, { role: "assistant", content: "Error reaching the research agent. Please try again." }]);
+}
+setLoading(false);
+```
+
+}
+
+const quickPrompts = [
+`Best ${sector} stocks for ${horizon.split(" ")[0].toLowerCase()}-term`,
+“What are the biggest market risks right now?”,
+“Which sectors look strongest this quarter?”,
+“Compare growth vs value stocks currently”,
+];
+
+return (
+<div style={{ minHeight: “100vh”, background: “#080c14”, fontFamily: “DM Sans, sans-serif”, color: “#e2e8f0”, display: “flex”, flexDirection: “column” }}>
+{/* Header */}
+<div style={{
+padding: “16px 24px”, borderBottom: “1px solid rgba(255,255,255,0.06)”,
+display: “flex”, alignItems: “center”, justifyContent: “space-between”,
+background: “rgba(8,12,20,0.95)”, position: “sticky”, top: 0, zIndex: 50,
+}}>
+<div style={{ display: “flex”, alignItems: “center”, gap: 12 }}>
+<div style={{
+width: 36, height: 36, borderRadius: 10,
+background: “linear-gradient(135deg,#f59e0b,#ef4444)”,
+display: “flex”, alignItems: “center”, justifyContent: “center”, fontSize: 18,
+}}>📈</div>
+<div>
+<div style={{ fontWeight: 700, fontSize: 16 }}>MarketMind</div>
+<div style={{ fontSize: 11, color: “#475569” }}>AI Investment Research Agent</div>
+</div>
+</div>
+<div style={{ display: “flex”, gap: 6 }}>
+{[{ val: sector, opts: SECTORS, set: setSector }, { val: horizon, opts: HORIZONS, set: setHorizon }, { val: risk, opts: RISK_LEVELS, set: setRisk }].map(({ val, opts, set }, i) => (
+<select key={i} value={val} onChange={(e) => set(e.target.value)} style={{
+background: “rgba(255,255,255,0.05)”, border: “1px solid rgba(255,255,255,0.1)”,
+borderRadius: 8, color: “#94a3b8”, fontSize: 12, padding: “6px 10px”, cursor: “pointer”,
+}}>
+{opts.map((o) => <option key={o} value={o} style={{ background: “#0f172a” }}>{o}</option>)}
+</select>
+))}
+</div>
+</div>
+
+```
+{/* Chat */}
+<div style={{ flex: 1, overflowY: "auto", padding: "24px", maxWidth: 860, width: "100%", margin: "0 auto", paddingBottom: 160 }}>
+{!started && (
+<div style={{ textAlign: "center", paddingTop: 60, paddingBottom: 40 }}>
+<div style={{ fontSize: 48, marginBottom: 16 }}>📊</div>
+<h1 style={{ fontSize: 32, fontWeight: 700, color: "#f8fafc", marginBottom: 10 }}>Your AI Market Research Analyst</h1>
+<p style={{ color: "#64748b", fontSize: 15, maxWidth: 500, margin: "0 auto 32px" }}>
+Get data-driven stock picks powered by real-time web research.
+</p>
+<div style={{ display: "flex", flexWrap: "wrap", gap: 8, justifyContent: "center" }}>
+{quickPrompts.map((p, i) => (
+<button key={i} onClick={() => sendMessage(p)} style={{
+background: "rgba(255,255,255,0.04)", border: "1px solid rgba(255,255,255,0.1)",
+borderRadius: 20, padding: "8px 16px", color: "#94a3b8", fontSize: 13, cursor: "pointer",
+}}>{p}</button>
+))}
+</div>
+</div>
+)}
+{messages.map((msg, i) => <Message key={i} msg={msg} />)}
+{loading && (
+<div style={{ display: "flex", gap: 8, alignItems: "center", padding: "12px 16px" }}>
+<span style={{ color: "#64748b", fontSize: 13 }}>Researching markets...</span>
+</div>
+)}
+<div ref={bottomRef} />
+</div>
+
+{/* Input */}
+<div style={{ position: "fixed", bottom: 0, left: 0, right: 0, background: "linear-gradient(to top,#080c14 60%,transparent)", padding: "20px 24px 28px" }}>
+<div style={{ maxWidth: 860, margin: "0 auto" }}>
+<div style={{
+display: "flex", gap: 10, alignItems: "flex-end",
+background: "rgba(255,255,255,0.05)", border: "1px solid rgba(255,255,255,0.1)",
+borderRadius: 16, padding: "12px 14px",
+}}>
+<textarea
+value={input}
+onChange={(e) => setInput(e.target.value)}
+onKeyDown={(e) => { if (e.key === "Enter" && !e.shiftKey) { e.preventDefault(); sendMessage(input); } }}
+placeholder={`Ask about ${sector} stocks, market trends, or specific companies...`}
+rows={1}
+style={{
+flex: 1, background: "transparent", border: "none", color: "#e2e8f0",
+fontSize: 14, lineHeight: 1.6, resize: "none", fontFamily: "DM Sans, sans-serif", outline: "none",
+}}
+/>
+<button onClick={() => sendMessage(input)} disabled={loading || !input.trim()} style={{
+width: 40, height: 40, borderRadius: 10, border: "none",
+background: input.trim() && !loading ? "linear-gradient(135deg,#f59e0b,#ef4444)" : "rgba(255,255,255,0.07)",
+color: input.trim() && !loading ? "#fff" : "#475569",
+cursor: input.trim() && !loading ? "pointer" : "not-allowed",
+fontSize: 18, flexShrink: 0,
+}}>↑</button>
+</div>
+<div style={{ textAlign: "center", marginTop: 8, fontSize: 11, color: "#334155" }}>
+Not financial advice · For research purposes only · Always consult a licensed advisor
+</div>
+</div>
+</div>
+</div>
+```
+
+);
+}
